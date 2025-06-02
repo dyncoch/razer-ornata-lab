@@ -48,3 +48,10 @@ pub const EMOJI_MAIL: &str = "✉️";
 // 🔒 Security
 pub const EMOJI_LOCK: &str = "🔒";
 pub const EMOJI_UNLOCK: &str = "🔓";
+
+// 🌈 Misc
+pub const EMOJI_RAINBOW: &str = "🌈";
+pub const EMOJI_WAVE: &str = "🌊";
+pub const EMOJI_GAMEPAD: &str = "🎮";
+pub const EMOJI_PUFF: &str = "💨";
+pub const EMOJI_STARS: &str = "✨";

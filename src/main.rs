@@ -32,7 +32,7 @@ fn main() -> Result<(), eframe::Error> {
     println!("========================================================");
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size(egui::vec2(500.0, 550.0)),
+        viewport: egui::ViewportBuilder::default().with_inner_size(egui::vec2(500.0, 600.0)),
         ..Default::default()
     };
     eframe::run_native(
@@ -120,78 +120,209 @@ impl RazerRGBMac {
             println!("{EMOJI_WRONG_WAY} No device connected.");
         }
     }
+
+    fn render_section<F, R>(ui: &mut egui::Ui, title: &str, content: F) -> R
+    where
+        F: FnOnce(&mut egui::Ui) -> R,
+    {
+        egui::Frame::new()
+            .fill(egui::Color32::from_gray(35))
+            .corner_radius(10.0)
+            .inner_margin(20.0)
+            .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(60)))
+            .show(ui, |ui| {
+                let section_title = egui::RichText::new(title)
+                    .size(18.0)
+                    .color(egui::Color32::from_rgb(200, 200, 255));
+                ui.label(section_title);
+                ui.add_space(15.0);
+                content(ui)
+            })
+            .inner
+    }
 }
 
 impl eframe::App for RazerRGBMac {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Set a dark theme
+        ctx.set_visuals(egui::Visuals::dark());
+
         egui::CentralPanel::default().show(ctx, |ui| {
-            // Title
-            ui.heading("oRazer RGB Control");
-            ui.separator();
-
-            // Status
-            ui.horizontal(|ui| {
-                ui.label("Status:");
-
-                // Indicator circle
-                let (rect, _reponse) =
-                    ui.allocate_exact_size(egui::Vec2 { x: 12.0, y: 12.0 }, egui::Sense::hover());
-
-                let status_color = if self.device_handle.is_none() {
-                    egui::Color32::RED
-                } else {
-                    egui::Color32::GREEN
-                };
-                ui.painter().circle_filled(rect.center(), 6.0, status_color);
-
-                ui.label(&self.device_status);
-            });
-
             ui.add_space(20.0);
 
-            // Colour selection
-            ui.horizontal(|ui| {
-                ui.label("Set static color:");
-                if ui.button("Green").clicked() {
-                    self.static_color(0, 255, 0);
-                }
-                if ui.button("Blue").clicked() {
-                    self.static_color(0, 0, 255);
-                }
-                if ui.button("Red").clicked() {
-                    self.static_color(255, 0, 0);
-                }
+            // Title
+            ui.vertical_centered(|ui| {
+                ui.add_space(10.0);
+                let title = egui::RichText::new(&format!("{EMOJI_GAMEPAD} Razer RGB Control"))
+                    .size(28.0)
+                    .color(egui::Color32::from_rgb(0, 255, 100));
+                ui.label(title);
+                ui.add_space(5.0);
+
+                let subtitle = egui::RichText::new("Ornata V3 Controller")
+                    .size(14.0)
+                    .color(egui::Color32::GRAY);
+                ui.label(subtitle);
             });
 
-            // Breathing selection
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label("Set breathing effect:");
+            ui.add_space(10.0);
 
-                if ui.button("Green").clicked() {
-                    self.breathing(0, 255, 0);
-                }
-                if ui.button("Blue").clicked() {
-                    self.breathing(0, 0, 255);
-                }
-                if ui.button("Red").clicked() {
-                    self.breathing(255, 0, 0);
-                }
-            });
+            // Status section
+            egui::Frame::new()
+                .fill(egui::Color32::from_gray(40))
+                .corner_radius(8.0)
+                .inner_margin(15.0)
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        // Status indicator
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
 
-            // Set Spectrum
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label("Set other effect:");
+                        let status_color = if self.device_handle.is_some() {
+                            egui::Color32::from_rgb(0, 255, 100)
+                        } else {
+                            egui::Color32::from_rgb(255, 80, 80)
+                        };
 
-                if ui.button("Spectrum").clicked() {
-                    self.spectrum();
-                }
+                        ui.painter().circle_filled(rect.center(), 8.0, status_color);
 
-                if ui.button("Wave").clicked() {
-                    self.wave(0x00, 0x01);
-                }
-            });
+                        ui.add_space(10.0);
+
+                        let status_text = egui::RichText::new(&self.device_status)
+                            .size(16.0)
+                            .color(egui::Color32::WHITE);
+                        ui.label(status_text);
+                    });
+                });
+
+            ui.add_space(10.0);
+
+            // Static color section
+            let (green_clicked, blue_clicked, red_clicked) =
+                Self::render_section(ui, "🎨 Static Colors", |ui| {
+                    ui.columns(3, |cols| {
+                        let green_clicked = cols[0]
+                            .add_sized(
+                                [80.0, 40.0],
+                                egui::Button::new(egui::RichText::new("Green").size(14.0))
+                                    .fill(egui::Color32::from_rgb(40, 120, 40)),
+                            )
+                            .clicked();
+
+                        let blue_clicked = cols[1]
+                            .add_sized(
+                                [80.0, 40.0],
+                                egui::Button::new(egui::RichText::new("Blue").size(14.0))
+                                    .fill(egui::Color32::from_rgb(40, 40, 120)),
+                            )
+                            .clicked();
+
+                        let red_clicked = cols[2]
+                            .add_sized(
+                                [80.0, 40.0],
+                                egui::Button::new(egui::RichText::new("Red").size(14.0))
+                                    .fill(egui::Color32::from_rgb(120, 40, 40)),
+                            )
+                            .clicked();
+
+                        (green_clicked, blue_clicked, red_clicked)
+                    })
+                });
+
+            if green_clicked {
+                self.static_color(0, 255, 0);
+            }
+            if blue_clicked {
+                self.static_color(0, 0, 255);
+            }
+            if red_clicked {
+                self.static_color(255, 0, 0);
+            }
+
+            ui.add_space(10.0);
+
+            // Breathing effects section
+            let (green_breathing, blue_breathing, red_breathing) =
+                Self::render_section(ui, &format!("{EMOJI_PUFF} Breathing Effects"), |ui| {
+                    ui.columns(3, |cols| {
+                        let green_clicked = cols[0]
+                            .add_sized(
+                                [80.0, 40.0],
+                                egui::Button::new(egui::RichText::new("Green").size(14.0))
+                                    .fill(egui::Color32::from_rgb(30, 90, 30)),
+                            )
+                            .clicked();
+
+                        let blue_clicked = cols[1]
+                            .add_sized(
+                                [80.0, 40.0],
+                                egui::Button::new(egui::RichText::new("Blue").size(14.0))
+                                    .fill(egui::Color32::from_rgb(30, 30, 90)),
+                            )
+                            .clicked();
+
+                        let red_clicked = cols[2]
+                            .add_sized(
+                                [80.0, 40.0],
+                                egui::Button::new(egui::RichText::new("Red").size(14.0))
+                                    .fill(egui::Color32::from_rgb(90, 30, 30)),
+                            )
+                            .clicked();
+
+                        (green_clicked, blue_clicked, red_clicked)
+                    })
+                });
+
+            if green_breathing {
+                self.breathing(0, 255, 0);
+            }
+            if blue_breathing {
+                self.breathing(0, 0, 255);
+            }
+            if red_breathing {
+                self.breathing(255, 0, 0);
+            }
+
+            ui.add_space(10.0);
+
+            // Special effects section
+            let (spectrum_clicked, wave_clicked) =
+                Self::render_section(ui, &format!("{EMOJI_STARS} Special Effects"), |ui| {
+                    ui.horizontal(|ui| {
+                        let spectrum_clicked = ui
+                            .add_sized(
+                                [120.0, 45.0],
+                                egui::Button::new(
+                                    egui::RichText::new(&format!("{EMOJI_RAINBOW} Spectrum"))
+                                        .size(14.0),
+                                )
+                                .fill(egui::Color32::from_rgb(80, 40, 120)),
+                            )
+                            .clicked();
+
+                        ui.add_space(20.0);
+
+                        let wave_clicked = ui
+                            .add_sized(
+                                [120.0, 45.0],
+                                egui::Button::new(
+                                    egui::RichText::new(&format!("{EMOJI_WAVE} Wave")).size(14.0),
+                                )
+                                .fill(egui::Color32::from_rgb(40, 80, 120)),
+                            )
+                            .clicked();
+
+                        (spectrum_clicked, wave_clicked)
+                    })
+                })
+                .inner;
+
+            if spectrum_clicked {
+                self.spectrum();
+            }
+            if wave_clicked {
+                self.wave(0x00, 0x01);
+            }
         });
     }
 }

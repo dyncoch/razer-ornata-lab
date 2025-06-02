@@ -55,3 +55,4 @@ pub const EMOJI_WAVE: &str = "🌊";
 pub const EMOJI_GAMEPAD: &str = "🎮";
 pub const EMOJI_PUFF: &str = "💨";
 pub const EMOJI_STARS: &str = "✨";
+pub const EMOJI_RUST: &str = "🦀";

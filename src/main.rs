@@ -1,10 +1,9 @@
 // Razer Ornata V3 RGB Control
 
-use eframe::{egui, egui_glow};
+use eframe::egui;
 use razer_rgb_mac::emojis::*;
 use razer_rgb_mac::razer_report::RazerReport;
 use rusb::{Context, DeviceHandle, UsbContext};
-use std::time::Duration;
 
 const RAZER_VENDOR_ID: u16 = 0x1532;
 const ORNATA_V3_PRODUCT_ID: u16 = 0x02A1;
@@ -45,6 +44,7 @@ fn main() -> Result<(), eframe::Error> {
 struct RazerRGBMac {
     device_handle: Option<DeviceHandle<Context>>,
     device_status: String,
+    show_about: bool,
 }
 
 impl Default for RazerRGBMac {
@@ -57,6 +57,7 @@ impl Default for RazerRGBMac {
         Self {
             device_handle: handle,
             device_status: status,
+            show_about: false,
         }
     }
 }
@@ -146,6 +147,16 @@ impl eframe::App for RazerRGBMac {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Set a dark theme
         ctx.set_visuals(egui::Visuals::dark());
+
+        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("Help", |ui| {
+                    if ui.button("About").clicked() {
+                        self.show_about = true;
+                    }
+                });
+            });
+        });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.add_space(20.0);
@@ -324,5 +335,30 @@ impl eframe::App for RazerRGBMac {
                 self.wave(0x00, 0x01);
             }
         });
+
+        // About window (shows when button is clicked)
+        if self.show_about {
+            egui::Window::new("About Razer RGB Control")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.label(
+                            egui::RichText::new(&format!("{EMOJI_GAMEPAD} Razer RGB Control"))
+                                .size(20.0),
+                        );
+                        ui.add_space(10.0);
+                        ui.label("Version 0.1.0");
+                        ui.label("Control your Razer Ornata V3 keyboard lighting");
+                        ui.add_space(15.0);
+                        ui.label("@author Lucas F.Martins");
+                        ui.add_space(15.0);
+                        if ui.button("Close").clicked() {
+                            self.show_about = false;
+                        }
+                    });
+                });
+        }
     }
 }

@@ -1,9 +1,10 @@
 // Razer Ornata V3 RGB Control
 
+use eframe::{egui, egui_glow};
+use razer_rgb_mac::emojis::*;
+use razer_rgb_mac::razer_report::RazerReport;
 use rusb::{Context, DeviceHandle, UsbContext};
 use std::time::Duration;
-mod razer_report;
-use razer_report::RazerReport;
 
 const RAZER_VENDOR_ID: u16 = 0x1532;
 const ORNATA_V3_PRODUCT_ID: u16 = 0x02A1;
@@ -16,7 +17,7 @@ fn find_device() -> Option<DeviceHandle<Context>> {
             && device_desc.product_id() == ORNATA_V3_PRODUCT_ID
         {
             println!(
-                "🎯 Found keyboard (Vendor ID: 0x{:04X}, Product ID: 0x{:04X})",
+                "{EMOJI_TARGET} Found keyboard (Vendor ID: 0x{:04X}, Product ID: 0x{:04X})",
                 device_desc.vendor_id(),
                 device_desc.product_id()
             );
@@ -26,71 +27,171 @@ fn find_device() -> Option<DeviceHandle<Context>> {
     None
 }
 
-fn main() {
-    println!("💡 Razer RGB Control");
+fn main() -> Result<(), eframe::Error> {
+    println!("{EMOJI_LAMP} Razer RGB Control");
     println!("========================================================");
 
-    match find_device() {
-        Some(mut handle) => {
-            println!("✅ Connected to Ornata V3");
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size(egui::vec2(500.0, 550.0)),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "Razer RGB MacOS",
+        options,
+        Box::new(|_cc| Ok(Box::new(RazerRGBMac::default()))),
+    )
+}
 
-            println!("\n🔴 Setting static red color...");
-            let red_cmd = RazerReport::static_rgb(0xFF, 0x00, 0x00);
-            if red_cmd.send(&mut handle) {
-                println!("   Keyboard should be RED.");
-            } else {
-                println!("   Failed to set red color (or command not supported/failed).");
-            }
-            std::thread::sleep(Duration::from_secs(3));
+struct RazerRGBMac {
+    device_handle: Option<DeviceHandle<Context>>,
+    device_status: String,
+}
 
-            println!("\n🟢 Setting static green color...");
-            let green_cmd = RazerReport::static_rgb(0x00, 0xFF, 0x00);
-            if green_cmd.send(&mut handle) {
-                println!("   Keyboard should be GREEN.");
-            } else {
-                println!("   Failed to set green color.");
-            }
-            std::thread::sleep(Duration::from_secs(3));
+impl Default for RazerRGBMac {
+    fn default() -> Self {
+        let (handle, status) = match find_device() {
+            Some(handle) => (Some(handle), "Razer Ornata v3".to_string()),
+            None => (None, "No device found".to_string()),
+        };
 
-            println!("\n🔵 Setting static blue color...");
-            let blue_cmd = RazerReport::static_rgb(0x00, 0x00, 0xFF);
-            if blue_cmd.send(&mut handle) {
-                println!("   Keyboard should be BLUE.");
-            } else {
-                println!("   Failed to set blue color.");
-            }
-            std::thread::sleep(Duration::from_secs(3));
-
-            println!("\n🌈 Setting spectrum cycling...");
-            let spectrum_cmd = RazerReport::spectrum();
-            if spectrum_cmd.send(&mut handle) {
-                println!("   Keyboard should be in SPECTRUM mode.");
-            } else {
-                println!("   Failed to set spectrum mode.");
-            }
-            std::thread::sleep(Duration::from_secs(5));
-
-            println!("\n💜 Setting purple breathing effect...");
-            let breathing_cmd = RazerReport::breathing(0xFF, 0x00, 0xFF);
-            if breathing_cmd.send(&mut handle) {
-                println!("   Keyboard should be BREATHING PURPLE.");
-            } else {
-                println!("   Failed to set breathing mode.");
-            }
-            std::thread::sleep(Duration::from_secs(5));
-
-            println!("\n🌊 Setting wave effect (direction 0, speed 0x01)...");
-            let wave_cmd = RazerReport::wave(0, 0x01);
-            if wave_cmd.send(&mut handle) {
-                println!("   Keyboard should be in WAVE mode.");
-            } else {
-                println!("   Failed to set wave mode.");
-            }
-
-            println!("\n🎉 RGB Control Test Complete!");
+        Self {
+            device_handle: handle,
+            device_status: status,
         }
-        None => {
-            println!("❌ Could not find or connect to Ornata V3.");
+    }
+}
+
+impl RazerRGBMac {
+    fn static_color(&mut self, r: u8, g: u8, b: u8) {
+        if let Some(ref mut handle) = self.device_handle {
+            let cmd = RazerReport::static_rgb(r, g, b);
+            if cmd.send(handle) {
+                println!("   {EMOJI_CHECK} Color set successfully.");
+            } else {
+                println!("   {EMOJI_CROSS} Failed to set color.");
+            }
+            println!("{EMOJI_SUCCESS} RGB Control Done!");
+        } else {
+            println!("{EMOJI_WRONG_WAY} No device connected.");
         }
+    }
+
+    fn breathing(&mut self, r: u8, g: u8, b: u8) {
+        if let Some(ref mut handle) = self.device_handle {
+            println!("{EMOJI_PAINT} Setting breathing");
+
+            let cmd = RazerReport::breathing(r, g, b);
+            if cmd.send(handle) {
+                println!("   {EMOJI_CHECK} Color set successfully.");
+            } else {
+                println!("   {EMOJI_CROSS} Failed to set color.");
+            }
+        } else {
+            println!("{EMOJI_WRONG_WAY} No device connected.");
+        }
+    }
+
+    fn spectrum(&mut self) {
+        if let Some(ref mut handle) = self.device_handle {
+            println!("{EMOJI_PAINT} Setting spectrum");
+
+            let cmd = RazerReport::spectrum();
+            if cmd.send(handle) {
+                println!("   {EMOJI_CHECK} Color set successfully.");
+            } else {
+                println!("   {EMOJI_CROSS} Failed to set color.");
+            }
+        } else {
+            println!("{EMOJI_WRONG_WAY} No device connected.");
+        }
+    }
+
+    fn wave(&mut self, direction: u8, speed: u8) {
+        if let Some(ref mut handle) = self.device_handle {
+            println!("{EMOJI_PAINT} Setting wave");
+
+            let cmd = RazerReport::wave(direction, speed);
+            if cmd.send(handle) {
+                println!("   {EMOJI_CHECK} Color set successfully.");
+            } else {
+                println!("   {EMOJI_CROSS} Failed to set color.");
+            }
+        } else {
+            println!("{EMOJI_WRONG_WAY} No device connected.");
+        }
+    }
+}
+
+impl eframe::App for RazerRGBMac {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // Title
+            ui.heading("oRazer RGB Control");
+            ui.separator();
+
+            // Status
+            ui.horizontal(|ui| {
+                ui.label("Status:");
+
+                // Indicator circle
+                let (rect, _reponse) =
+                    ui.allocate_exact_size(egui::Vec2 { x: 12.0, y: 12.0 }, egui::Sense::hover());
+
+                let status_color = if self.device_handle.is_none() {
+                    egui::Color32::RED
+                } else {
+                    egui::Color32::GREEN
+                };
+                ui.painter().circle_filled(rect.center(), 6.0, status_color);
+
+                ui.label(&self.device_status);
+            });
+
+            ui.add_space(20.0);
+
+            // Colour selection
+            ui.horizontal(|ui| {
+                ui.label("Set static color:");
+                if ui.button("Green").clicked() {
+                    self.static_color(0, 255, 0);
+                }
+                if ui.button("Blue").clicked() {
+                    self.static_color(0, 0, 255);
+                }
+                if ui.button("Red").clicked() {
+                    self.static_color(255, 0, 0);
+                }
+            });
+
+            // Breathing selection
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Set breathing effect:");
+
+                if ui.button("Green").clicked() {
+                    self.breathing(0, 255, 0);
+                }
+                if ui.button("Blue").clicked() {
+                    self.breathing(0, 0, 255);
+                }
+                if ui.button("Red").clicked() {
+                    self.breathing(255, 0, 0);
+                }
+            });
+
+            // Set Spectrum
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Set other effect:");
+
+                if ui.button("Spectrum").clicked() {
+                    self.spectrum();
+                }
+
+                if ui.button("Wave").clicked() {
+                    self.wave(0x00, 0x01);
+                }
+            });
+        });
     }
 }

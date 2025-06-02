@@ -22,8 +22,8 @@ pub const BACKLIGHT_LED: u8 = 0x05;
 
 pub const EXT_EFFECT_STATIC: u8 = 0x01;
 pub const EXT_EFFECT_BREATHING: u8 = 0x02;
-pub const EXT_EFFECT_SPECTRUM: u8 = 0x03;
-pub const EXT_EFFECT_WAVE: u8 = 0x04;
+pub const EXT_EFFECT_SPECTRUM: u8 = 0x04;
+pub const EXT_EFFECT_WAVE: u8 = 0x03;
 
 pub const RAZER_CMD_SUCCESSFUL: u8 = 0x02;
 pub const RAZER_CMD_NOT_SUPPORTED: u8 = 0x05;
@@ -100,7 +100,7 @@ impl RazerReport {
         report
     }
 
-    pub fn wave(direction: u8, speed_param: u8) -> Self {
+    pub fn wave(direction: u8, speed: u8) -> Self {
         let mut report = Self::new();
         report.command_class = 0x0F;
         report.command_id = 0x02;
@@ -109,7 +109,7 @@ impl RazerReport {
         report.arguments[1] = BACKLIGHT_LED;
         report.arguments[2] = EXT_EFFECT_WAVE;
         report.arguments[3] = direction;
-        report.arguments[4] = speed_param;
+        report.arguments[4] = speed;
         report.calculate_crc();
         report
     }
